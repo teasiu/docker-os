@@ -52,6 +52,7 @@ jobs:
           wget -O ./packages/linux64-3.16.55.tazpkg http://ecoo.top:8083/dl/slitaz/linux64-3.16.55.tazpkg
           wget -O ./packages/dockerd.tazpkg http://ecoo.top:8083/dl/slitaz/dockerd.tazpkg
           wget -O ./packages/sudocn-1.8.4.tazpkg http://ecoo.top:8083/dl/slitaz/sudocn-1.8.4.tazpkg
+          wget -O ./packages/gen-slitaz64-docker.sh http://ecoo.top:8083/dl/slitaz/gen-slitaz64-docker-english.sh
           
       - name: docker build a new rootfs
         run: |
@@ -88,3 +89,30 @@ jobs:
           asset_path: ./boot2docker.iso
           asset_name: boot2docker.iso
           asset_content_type: application/iso
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: rootfs.gz
+          path: ./rootfs.gz
+        
+  slitaz:
+    runs-on: ubuntu-20.04
+    needs: [build-test]
+    steps:
+      - name: Download a single artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: rootfs.gz
+      - name: Upload to SourceForge
+        run: |
+          echo "$DEPLOY_KEY" > $HOME/deploy_key
+          set -ex
+          chmod 600 $HOME/deploy_key
+          mkdir slitaz
+          mv rootfs.gz slitaz
+          Localslitaz=`ls -d slitaz/rootfs.gz`
+          Remoteslitaz=teasiu@frs.sourceforge.net:/home/frs/project/slitaz/slitaz5-rolling-core64
+          rsync -e "ssh -i $HOME/deploy_key -oStrictHostKeyChecking=no -oBatchMode=yes" -va --delete $Localslitaz/ $Remoteslitaz
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
