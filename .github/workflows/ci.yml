@@ -106,13 +106,10 @@ jobs:
           name: rootfs.gz
       - name: Upload to SourceForge
         run: |
-          echo "$DEPLOY_KEY" > $HOME/deploy_key
-          set -ex
-          chmod 600 $HOME/deploy_key
           mkdir slitaz
           mv rootfs.gz slitaz
           Localslitaz=`ls -d slitaz/rootfs.gz`
           Remoteslitaz=teasiu@frs.sourceforge.net:/home/frs/project/slitaz/slitaz5-rolling-core64
-          rsync -e "ssh -i $HOME/deploy_key -oStrictHostKeyChecking=no -oBatchMode=yes" -va --delete $Localslitaz/ $Remoteslitaz
+          rsync -va --delete $Localslitaz $Remoteslitaz
         env:
-          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
